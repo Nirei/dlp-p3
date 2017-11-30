@@ -43,7 +43,7 @@ f.exe: $(OBJS) main.cmo
 
 # Build and test
 test: all
-	./f test.f
+	rlwrap ./f
 
 # Compile an ML module interface
 %.cmi : %.mli

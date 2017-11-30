@@ -15,6 +15,7 @@ let searchpath = ref [""]
 
 let parseArgs () =
   let inFile = ref (None : string option) in
+  (* command line option names, descriptions and objects *)
   let argDefs = [
     "-I",
       Arg.String (fun f -> searchpath := f::!searchpath),
@@ -24,14 +25,15 @@ let parseArgs () =
         match !inFile with
           Some(_) -> err "You must specify exactly one input file"
         | None -> inFile := Some(s)),
-      "Specify input file"
+      "Specify the input file"
     ] in
   Arg.parse argDefs
+     (* unnamed arguments function *)
 	 (fun _ -> err "Unrecognized arguments.")
      "";
   match !inFile with
-      None -> ""
-    | Some(s) -> s
+      None -> "" (* interactive interpreter *)
+    | Some(s) -> s (* input file specified *)
 
 let openfile infile = 
   let rec trynext l = match l with
@@ -119,7 +121,7 @@ let () = set_max_boxes 1000
 let () = set_margin 67
 let res = 
   Printexc.catch (fun () -> 
-    try main();0 
+    try main(); 0 
     with Exit x -> x) 
   ()
 let () = print_flush()
