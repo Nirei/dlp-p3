@@ -88,7 +88,16 @@ let rec toplevel ctx =
       (* parse the lexed input string, return a syntactic tree *)
 	  Parser.toplevel Lexer.main lexbuf 
 	  (* unless there's an error on the input string *)
-	  with Parsing.Parse_error -> error (Lexer.info lexbuf) "Parse error"
+	  with Parsing.Parse_error as e ->
+	  	(* pretty print the error and scalate the exception *)
+        print_flush(); 
+        open_vbox 0; 
+        open_hvbox 0;
+        printInfo (Lexer.info lexbuf);
+        print_space ();
+        print_string "Parse error";
+        print_cut(); close_box(); print_newline();
+        raise e;
 	in
 	(* we apply the semantic tree to a context to obtain a command list *)
 	let cmds, _ = result ctx in
@@ -107,7 +116,9 @@ let rec toplevel ctx =
     (* and recall the interpreter's main loop with an updated context *)
     toplevel new_ctx
   (* interpreter will exit on EOF (Ctrl+D) *)
-  with End_of_file -> ()
+  with
+    Parsing.Parse_error -> toplevel ctx
+    | End_of_file -> ()
 
 let main () = 
   let inFile = parseArgs() in
