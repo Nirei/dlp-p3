@@ -58,25 +58,28 @@ let alreadyImported = ref ([] : string list)
 let rec process_command ctx cmd = match cmd with
   | Eval(fi,t) -> 
       let t' = eval ctx t in
-      printtm_ATerm true ctx t'; 
+      printtm_ATerm true ctx t';
       force_newline();
+      print_flush();
       ctx
   | Bind(fi,x,bind) -> 
-      
       let bind' = evalbinding ctx bind in
       pr x; pr " "; prbinding ctx bind'; force_newline();
       addbinding ctx x bind'
   
 let process_file f ctx =
-  alreadyImported := f :: !alreadyImported;
-  let cmds,_ = parseFile f ctx in
-  let g ctx c =  
-    open_hvbox 0;
-    let results = process_command ctx c in
-    print_flush();
-    results
-  in
-    List.fold_left g ctx cmds
+  try
+	  alreadyImported := f :: !alreadyImported;
+	  let cmds,_ = parseFile f ctx in
+	  let g ctx c =  
+		open_hvbox 0;
+		let results = process_command ctx c in
+		close_box();
+		print_flush();
+		results
+	  in
+		List.fold_left g ctx cmds
+  with Support.Error.Exit(code) -> exit code
 
 let rec toplevel ctx =
   Printf.printf ":: "; (* prompt *)
@@ -90,8 +93,7 @@ let rec toplevel ctx =
 	  (* unless there's an error on the input string *)
 	  with Parsing.Parse_error as e ->
 	  	(* pretty print the error and scalate the exception *)
-        print_flush(); 
-        open_vbox 0; 
+        print_flush();
         open_hvbox 0;
         printInfo (Lexer.info lexbuf);
         print_space ();
@@ -106,6 +108,7 @@ let rec toplevel ctx =
     let g ctx c =
       open_hvbox 0;
       let results = process_command ctx c in
+      close_box();
       print_flush();
       results (* return context *)
     in
@@ -118,6 +121,7 @@ let rec toplevel ctx =
   (* interpreter will exit on EOF (Ctrl+D) *)
   with
     Parsing.Parse_error -> toplevel ctx
+    | Support.Error.Exit(code) -> close_box(); print_flush(); toplevel ctx
     | End_of_file -> ()
 
 let main () = 
@@ -130,10 +134,16 @@ let main () =
 
 let () = set_max_boxes 1000
 let () = set_margin 67
+(* Printexc.catch is OBSOLETE
 let res = 
   Printexc.catch (fun () -> 
     try main(); 0 
     with Exit x -> x) 
   ()
+*)
 let () = print_flush()
+(* 
 let () = exit res
+*)
+let () = main ()
+	

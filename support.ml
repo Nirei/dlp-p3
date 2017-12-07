@@ -11,9 +11,8 @@ let dummyinfo = UNKNOWN
 let createInfo f l c = FI(f, l, c)
 
 let errf f = 
-  print_flush(); 
-  open_vbox 0; 
-  open_hvbox 0; f(); print_cut(); close_box(); print_newline();
+  print_flush();
+  open_hbox (); f(); print_cut(); close_box(); print_newline();
   raise (Exit 1)
 
 let printInfo =
@@ -28,11 +27,11 @@ let printInfo =
   | UNKNOWN ->
       print_string "<Unknown file and line>: "
 
-let errfAt fi f = errf(fun()-> printInfo fi; print_space(); f())
+let errfAt fi f = errf (fun()-> printInfo fi; print_space(); f())
 
-let err s = errf (fun()-> print_string "Error: "; print_string s; print_newline())
+let err s = errf (fun()-> print_string "Error: "; print_string s)
 
-let error fi s = errfAt fi (fun()-> print_string s; print_newline())
+let error fi s = errfAt fi (fun()-> print_string s; (* print_newline() *))
 
 let warning s =
   print_string "Warning: "; print_string s;
