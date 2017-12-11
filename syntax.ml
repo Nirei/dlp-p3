@@ -123,7 +123,7 @@ let termSubstTop s t =
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 
-let rec getbinding fi ctx i =
+let getbinding fi ctx i =
   try
     let (_,bind) = List.nth ctx i in
     bindingshift (i+1) bind 
