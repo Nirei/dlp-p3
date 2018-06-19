@@ -24,14 +24,21 @@ type term =
   | TmLet of info * string * term * term
 
 type binding =
-    NameBind 
+    NameBind
   | TmAbbBind of term
 
 type context = (string * binding) list
 
+(* Debug commands *)
+type dbg =
+  | DbgContextualize
+  | DbgStartTrace
+  | DbgEndTrace
+
 type command =
   | Eval of info * term
   | Bind of info * string * binding
+  | Debug of info * dbg
 
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
@@ -46,10 +53,10 @@ let addname ctx x = addbinding ctx x NameBind
 
 let rec isnamebound ctx x =
   match ctx with
-      [] -> false
-    | (y,_)::rest ->
-        if y=x then true
-        else isnamebound rest x
+    [] -> false
+  | (y,_)::rest ->
+    if y=x then true
+    else isnamebound rest x
 
 let rec pickfreshname ctx x =
   if isnamebound ctx x then pickfreshname ctx (x^"'")
@@ -66,34 +73,34 @@ let index2name fi ctx x =
 
 let rec name2index fi ctx x =
   match ctx with
-      [] -> error fi ("Identifier " ^ x ^ " is unbound")
-    | (y,_)::rest ->
-        if y=x then 0
-        else 1 + (name2index fi rest x)
+    [] -> error fi ("Identifier " ^ x ^ " is unbound")
+  | (y,_)::rest ->
+    if y=x then 0
+    else 1 + (name2index fi rest x)
 
 (* ---------------------------------------------------------------------- *)
 (* Shifting *)
 
-let tmmap onvar c t = 
+let tmmap onvar c t =
   let rec walk c t = match t with
-    TmTrue(fi) as t -> t
-  | TmFalse(fi) as t -> t
-  | TmIf(fi,t1,t2,t3) -> TmIf(fi,walk c t1,walk c t2,walk c t3)
-  | TmVar(fi,x,n) -> onvar fi c x n
-  | TmAbs(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
-  | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
-  | TmProj(fi,t1,l) -> TmProj(fi,walk c t1,l)
-  | TmRecord(fi,fields) -> TmRecord(fi,List.map (fun (li,ti) ->
-                                               (li,walk c ti))
-                                    fields)
-  | TmFloat _ as t -> t
-  | TmTimesfloat(fi,t1,t2) -> TmTimesfloat(fi, walk c t1, walk c t2)
-  | TmString _ as t -> t
-  | TmZero(fi)      -> TmZero(fi)
-  | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
-  | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
-  | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
-  | TmLet(fi,x,t1,t2) -> TmLet(fi,x,walk c t1,walk (c+1) t2)
+      TmTrue(fi) as t -> t
+    | TmFalse(fi) as t -> t
+    | TmIf(fi,t1,t2,t3) -> TmIf(fi,walk c t1,walk c t2,walk c t3)
+    | TmVar(fi,x,n) -> onvar fi c x n
+    | TmAbs(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
+    | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
+    | TmProj(fi,t1,l) -> TmProj(fi,walk c t1,l)
+    | TmRecord(fi,fields) -> TmRecord(fi,List.map (fun (li,ti) ->
+        (li,walk c ti))
+        fields)
+    | TmFloat _ as t -> t
+    | TmTimesfloat(fi,t1,t2) -> TmTimesfloat(fi, walk c t1, walk c t2)
+    | TmString _ as t -> t
+    | TmZero(fi)      -> TmZero(fi)
+    | TmSucc(fi,t1)   -> TmSucc(fi, walk c t1)
+    | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
+    | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
+    | TmLet(fi,x,t1,t2) -> TmLet(fi,x,walk c t1,walk (c+1) t2)
   in walk c t
 
 let termShiftAbove d c t =
@@ -117,7 +124,7 @@ let termSubst j s t =
     0
     t
 
-let termSubstTop s t = 
+let termSubstTop s t =
   termShift (-1) (termSubst 0 (termShift 1 s) t)
 
 (* ---------------------------------------------------------------------- *)
@@ -126,12 +133,12 @@ let termSubstTop s t =
 let getbinding fi ctx i =
   try
     let (_,bind) = List.nth ctx i in
-    bindingshift (i+1) bind 
+    bindingshift (i+1) bind
   with Failure _ ->
     let msg =
       Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
     error fi (msg i (List.length ctx))
- 
+
 (* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
 
@@ -151,13 +158,13 @@ let tmInfo t = match t with
   | TmSucc(fi,_) -> fi
   | TmPred(fi,_) -> fi
   | TmIsZero(fi,_) -> fi
-  | TmLet(fi,_,_,_) -> fi 
+  | TmLet(fi,_,_,_) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
 
 (* The printing functions call these utility functions to insert grouping
-  information and line-breaking hints for the pretty-printing library:
+   information and line-breaking hints for the pretty-printing library:
      obox   Open a "box" whose contents will be indented by two spaces if
             the whole box cannot fit on the current line
      obox0  Same but indent continuation lines to the same column as the
@@ -165,8 +172,8 @@ let tmInfo t = match t with
      cbox   Close the current box
      break  Insert a breakpoint indicating where the line maybe broken if
             necessary.
-  See the documentation for the Format module in the OCaml library for
-  more details. 
+   See the documentation for the Format module in the OCaml library for
+   more details.
 *)
 
 let obox0() = open_hvbox 0
@@ -174,97 +181,114 @@ let obox() = open_hvbox 2
 let cbox() = close_box()
 let break() = print_break 0 0
 
-let small t = 
+let small t =
   match t with
     TmVar(_,_,_) -> true
   | _ -> false
 
 let rec printtm_Term outer ctx t = match t with
     TmIf(fi, t1, t2, t3) ->
-       obox0();
-       pr "if ";
-       printtm_Term false ctx t1;
-       print_space();
-       pr "then ";
-       printtm_Term false ctx t2;
-       print_space();
-       pr "else ";
-       printtm_Term false ctx t3;
-       cbox()
+    obox0();
+    pr "if ";
+    printtm_Term false ctx t1;
+    print_space();
+    pr "then ";
+    printtm_Term false ctx t2;
+    print_space();
+    pr "else ";
+    printtm_Term false ctx t3;
+    cbox()
   | TmAbs(fi,x,t2) ->
-      (let (ctx',x') = (pickfreshname ctx x) in
-            obox(); pr "lambda "; pr x'; pr ".";
-            if (small t2) && not outer then break() else print_space();
-            printtm_Term outer ctx' t2;
-            cbox())
+    (let (ctx',x') = (pickfreshname ctx x) in
+     obox(); pr "lambda "; pr x'; pr ".";
+     if (small t2) && not outer then break() else print_space();
+     printtm_Term outer ctx' t2;
+     cbox())
   | TmLet(fi, x, t1, t2) ->
-       obox0();
-       pr "let "; pr x; pr " = "; 
-       printtm_Term false ctx t1;
-       print_space(); pr "in"; print_space();
-       printtm_Term false (addname ctx x) t2;
-       cbox()
+    obox0();
+    pr "let "; pr x; pr " = ";
+    printtm_Term false ctx t1;
+    print_space(); pr "in"; print_space();
+    printtm_Term false (addname ctx x) t2;
+    cbox()
   | t -> printtm_AppTerm outer ctx t
 
 and printtm_AppTerm outer ctx t = match t with
     TmApp(fi, t1, t2) ->
-      obox0();
-      printtm_AppTerm false ctx t1;
-      print_space();
-      printtm_ATerm false ctx t2;
-      cbox()
+    obox0();
+    printtm_AppTerm false ctx t1;
+    print_space();
+    printtm_ATerm false ctx t2;
+    cbox()
   | TmTimesfloat(_,t1,t2) ->
-       pr "timesfloat "; printtm_ATerm false ctx t2; 
-       pr " "; printtm_ATerm false ctx t2
+    pr "timesfloat "; printtm_ATerm false ctx t2;
+    pr " "; printtm_ATerm false ctx t2
   | TmPred(_,t1) ->
-       pr "pred "; printtm_ATerm false ctx t1
+    pr "pred "; printtm_ATerm false ctx t1
   | TmIsZero(_,t1) ->
-       pr "iszero "; printtm_ATerm false ctx t1
+    pr "iszero "; printtm_ATerm false ctx t1
   | t -> printtm_PathTerm outer ctx t
 
 and printtm_PathTerm outer ctx t = match t with
     TmProj(_, t1, l) ->
-      printtm_ATerm false ctx t1; pr "."; pr l
+    printtm_ATerm false ctx t1; pr "."; pr l
   | t -> printtm_ATerm outer ctx t
 
 and printtm_ATerm outer ctx t = match t with
     TmTrue(_) -> pr "true"
   | TmFalse(_) -> pr "false"
   | TmVar(fi,x,n) ->
-      if ctxlength ctx = n then
-        pr (index2name fi ctx x)
-      else
-        pr ("[bad index: " ^ (string_of_int x) ^ "/" ^ (string_of_int n)
-            ^ " in {"
-            ^ (List.fold_left (fun s (x,_) -> s ^ " " ^ x) "" ctx)
-            ^ " }]")
+    if ctxlength ctx = n then
+      pr (index2name fi ctx x)
+    else
+      pr ("[bad index: " ^ (string_of_int x) ^ "/" ^ (string_of_int n)
+          ^ " in {"
+          ^ (List.fold_left (fun s (x,_) -> s ^ " " ^ x) "" ctx)
+          ^ " }]")
   | TmRecord(fi, fields) ->
-       let pf i (li,ti) =
-         if (li <> ((string_of_int i))) then (pr li; pr "="); 
-         printtm_Term false ctx ti 
-       in let rec p i l = match l with
-           [] -> ()
-         | [f] -> pf i f
-         | f::rest ->
-             pf i f; pr","; if outer then print_space() else break(); 
-             p (i+1) rest
-       in pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox()
+    let pf i (li,ti) =
+      if (li <> ((string_of_int i))) then (pr li; pr "=");
+      printtm_Term false ctx ti
+    in let rec p i l = match l with
+          [] -> ()
+        | [f] -> pf i f
+        | f::rest ->
+          pf i f; pr","; if outer then print_space() else break();
+          p (i+1) rest
+    in pr "{"; open_hovbox 0; p 1 fields; pr "}"; cbox()
   | TmFloat(_,s) -> pr (string_of_float s)
   | TmString(_,s) -> pr ("\"" ^ s ^ "\"")
   | TmZero(fi) ->
-       pr "0"
+    pr "0"
   | TmSucc(_,t1) ->
-     let rec f n t = match t with
-         TmZero(_) -> pr (string_of_int n)
-       | TmSucc(_,s) -> f (n+1) s
-       | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
-     in f 1 t1
+    let rec f n t = match t with
+        TmZero(_) -> pr (string_of_int n)
+      | TmSucc(_,s) -> f (n+1) s
+      | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
+    in f 1 t1
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
-let printtm ctx t = printtm_Term true ctx t 
+let printtm ctx t = printtm_Term true ctx t
 
 let prbinding ctx b = match b with
     NameBind -> ()
-  | TmAbbBind(t) -> pr "= "; printtm ctx t 
+  | TmAbbBind(t) -> pr "= "; printtm ctx t
 
 
+(* ---------------------------------------------------------------------- *)
+(* Debugging *)
+
+let print_context ctx =
+  List.iter
+    ( fun (name, binding) ->
+      print_string name;
+      pr " ";
+      prbinding ctx binding;
+      print_newline ()
+    )
+    (List.rev ctx)
+
+let debugging ctx dbg = match dbg with
+    DbgContextualize -> print_context ctx; ctx
+  | DbgStartTrace -> ctx
+  | DbgEndTrace -> ctx

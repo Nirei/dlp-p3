@@ -1,4 +1,4 @@
-/*  
+/*
  *  Yacc grammar for the parser.  The files parser.mli and parser.ml
  *  are generated automatically from parser.mly.
  */
@@ -22,6 +22,8 @@ open Syntax
  */
 
 /* Keyword tokens */
+/* The token keyword is always suffixed by a <list> that declares the type of
+info accompanying the token */
 %token <Support.Error.info> IF
 %token <Support.Error.info> THEN
 %token <Support.Error.info> ELSE
@@ -34,6 +36,11 @@ open Syntax
 %token <Support.Error.info> ISZERO
 %token <Support.Error.info> LET
 %token <Support.Error.info> IN
+
+/* Debugging tokens */
+%token <Support.Error.info> CTX
+%token <Support.Error.info> START_TRACE
+%token <Support.Error.info> END_TRACE
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -84,7 +91,7 @@ open Syntax
 /* ---------------------------------------------------------------------- */
 /* The starting production of the generated parser is the syntactic class
    toplevel.  The type that is returned when a toplevel is recognized is
-     Syntax.context -> (Syntax.command list * Syntax.context) 
+     Syntax.context -> (Syntax.command list * Syntax.context)
    that is, the parser returns to the user program a function that,
    when given a naming context, returns a fully parsed list of
    Syntax.commands and the new naming context that results when
@@ -94,7 +101,7 @@ open Syntax
    they take a context as argument and return a fully parsed abstract
    syntax tree (and, if they involve any constructs that bind variables
    in some following phrase, a new context).
-   
+
 */
 
 %start toplevel
@@ -117,10 +124,20 @@ toplevel :
 
 /* A top-level command */
 Command :
-  | Term 
+  | Term
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | LCID Binder
       { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
+  | Debug
+      { fun ctx -> Debug(dummyinfo, $1),ctx }
+
+Debug :
+  | CTX
+    { DbgContextualize }
+  | START_TRACE
+    { DbgStartTrace }
+  | END_TRACE
+    { DbgEndTrace }
 
 /* Right-hand sides of top-level bindings */
 Binder :
@@ -134,11 +151,11 @@ Term :
       { $1 }
   | IF Term THEN Term ELSE Term
       { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
-  | LAMBDA LCID DOT Term 
+  | LAMBDA LCID DOT Term
       { fun ctx ->
           let ctx1 = addname ctx $2.v in
           TmAbs($1, $2.v, $4 ctx1) }
-  | LAMBDA USCORE DOT Term 
+  | LAMBDA USCORE DOT Term
       { fun ctx ->
           let ctx1 = addname ctx "_" in
           TmAbs($1, "_", $4 ctx1) }
@@ -176,13 +193,13 @@ PathTerm :
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm :
-    LPAREN Term RPAREN  
-      { $2 } 
+    LPAREN Term RPAREN
+      { $2 }
   | TRUE
       { fun ctx -> TmTrue($1) }
   | FALSE
       { fun ctx -> TmFalse($1) }
-  | LCID 
+  | LCID
       { fun ctx ->
           TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | LCURLY Fields RCURLY
