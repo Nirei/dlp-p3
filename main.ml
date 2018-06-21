@@ -83,8 +83,12 @@ let process_file f ctx =
     List.fold_left g ctx cmds
   with Support.Error.Exit(code) -> exit code
 
+let __PROMPT__ = ":: "
+
 let rec toplevel ctx =
-  Printf.printf ":: "; (* prompt *)
+  print_string (if check_trace ctx then "(tracing) " else "");
+  print_string __PROMPT__;
+  print_flush ();
   try
     let input = read_line () in
     (* creates a lexer buffer from the input string *)

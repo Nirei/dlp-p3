@@ -23,6 +23,25 @@ type term =
   | TmIsZero of info * term
   | TmLet of info * string * term * term
 
+(** Term to string *)
+let termTypeToString = function
+    TmTrue (_) -> "TmTrue"
+  | TmFalse (_) -> "TmFalse"
+  | TmIf (_,_,_,_) -> "TmIf"
+  | TmVar (_,_,_) -> "TmVar"
+  | TmAbs (_,_,_) -> "TmAbs"
+  | TmApp (_,_,_) -> "TmApp"
+  | TmRecord (_,_) -> "TmRecord"
+  | TmProj (_,_,_) -> "TmProj"
+  | TmFloat (_,_) -> "TmFloat"
+  | TmTimesfloat (_,_,_) -> "TmTimesfloat"
+  | TmString (_,_) -> "TmString"
+  | TmZero (_) -> "TmZero"
+  | TmSucc (_,_) -> "TmSucc"
+  | TmPred (_,_) -> "TmPred"
+  | TmIsZero (_,_) -> "TmIsZero"
+  | TmLet (_,_,_,_) -> "TmLet"
+
 type binding =
     NameBind
   | TmAbbBind of term
@@ -43,7 +62,13 @@ type command =
 (* ---------------------------------------------------------------------- *)
 (* Context management *)
 
-let emptycontext = []
+(* Name of the trace flag *)
+let __TRACE__ = "__TRACE__"
+let __TRACE_ON__ = TmAbbBind(TmTrue(dummyinfo))
+let __TRACE_OFF__ = TmAbbBind(TmFalse(dummyinfo))
+let initialTraceFlag = __TRACE__, __TRACE_ON__
+
+let emptycontext = [initialTraceFlag]
 
 let ctxlength ctx = List.length ctx
 
@@ -221,7 +246,7 @@ and printtm_AppTerm outer ctx t = match t with
     printtm_ATerm false ctx t2;
     cbox()
   | TmTimesfloat(_,t1,t2) ->
-    pr "timesfloat "; printtm_ATerm false ctx t2;
+    pr "timesfloat "; printtm_ATerm false ctx t1;
     pr " "; printtm_ATerm false ctx t2
   | TmPred(_,t1) ->
     pr "pred "; printtm_ATerm false ctx t1
@@ -279,16 +304,30 @@ let prbinding ctx b = match b with
 (* Debugging *)
 
 let print_context ctx =
-  List.iter
-    ( fun (name, binding) ->
-      print_string name;
-      pr " ";
-      prbinding ctx binding;
-      print_newline ()
-    )
-    (List.rev ctx)
+  let _ = List.fold_left
+    ( fun seen (name, binding) ->
+      if List.mem name seen
+      then seen
+      else (
+        print_string name;
+        pr " ";
+        prbinding ctx binding;
+        print_newline ();
+        name::seen
+      )
+    ) [] ctx in
+  ()
+
+let check_trace ctx =
+  let index = name2index dummyinfo ctx __TRACE__ in
+  match List.nth ctx index with
+      _, NameBind -> false
+    | _, TmAbbBind(traceVal) -> (match traceVal with
+        TmTrue(_) -> true
+      | TmFalse(_) -> false
+      | _ -> false)
 
 let debugging ctx dbg = match dbg with
     DbgContextualize -> print_context ctx; ctx
-  | DbgStartTrace -> ctx
-  | DbgEndTrace -> ctx
+  | DbgStartTrace -> addbinding ctx __TRACE__ __TRACE_ON__
+  | DbgEndTrace -> addbinding ctx __TRACE__ __TRACE_OFF__

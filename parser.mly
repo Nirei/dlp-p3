@@ -40,7 +40,7 @@ info accompanying the token */
 /* Debugging tokens */
 %token <Support.Error.info> CTX
 %token <Support.Error.info> START_TRACE
-%token <Support.Error.info> END_TRACE
+%token <Support.Error.info> STOP_TRACE
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -136,7 +136,7 @@ Debug :
     { DbgContextualize }
   | START_TRACE
     { DbgStartTrace }
-  | END_TRACE
+  | STOP_TRACE
     { DbgEndTrace }
 
 /* Right-hand sides of top-level bindings */

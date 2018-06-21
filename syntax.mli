@@ -25,6 +25,8 @@ type term =
   | TmIsZero of info * term
   | TmLet of info * string * term * term
 
+val termTypeToString : term -> string
+
 (** A binding is either a name (let ... in ) or an abstraction (... = ...) over
     a term *)
 type binding =
@@ -85,4 +87,5 @@ val prbinding : context -> binding -> unit
 val tmInfo: term -> info
 
 (* Debugging *)
+val check_trace: context -> bool
 val debugging: context -> dbg -> context
