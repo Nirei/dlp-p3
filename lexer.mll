@@ -58,6 +58,7 @@ let reservedWords = [
   ("|}", fun i -> Parser.BARRCURLY i);
   ("|>", fun i -> Parser.BARGT i);
   ("|]", fun i -> Parser.BARRSQUARE i);
+  ("λ", fun i -> Parser.LAMBDA i);
 
   (* Special compound symbols: *)
   (":=", fun i -> Parser.COLONEQ i);

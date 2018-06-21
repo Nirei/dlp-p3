@@ -66,7 +66,7 @@ type command =
 let __TRACE__ = "__TRACE__"
 let __TRACE_ON__ = TmAbbBind(TmTrue(dummyinfo))
 let __TRACE_OFF__ = TmAbbBind(TmFalse(dummyinfo))
-let initialTraceFlag = __TRACE__, __TRACE_ON__
+let initialTraceFlag = __TRACE__, __TRACE_OFF__
 
 let emptycontext = [initialTraceFlag]
 
@@ -225,7 +225,7 @@ let rec printtm_Term outer ctx t = match t with
     cbox()
   | TmAbs(fi,x,t2) ->
     (let (ctx',x') = (pickfreshname ctx x) in
-     obox(); pr "lambda "; pr x'; pr ".";
+     obox(); pr "λ"; pr x'; pr ".";
      if (small t2) && not outer then break() else print_space();
      printtm_Term outer ctx' t2;
      cbox())
