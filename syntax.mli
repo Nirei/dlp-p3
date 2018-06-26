@@ -24,6 +24,7 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmLet of info * string * term * term
+  | TmRec of info * string * term (* Term to allow for recursion *)
 
 val termTypeToString : term -> string
 
@@ -39,6 +40,12 @@ type dbg =
   | DbgStartTrace
   | DbgEndTrace
 
+(* Trace flag *)
+val __TRACE__ : string
+val __TRACE_ON__ : binding
+val __TRACE_OFF__ : binding
+val initialTraceFlag : string * binding
+
 (** A command is an order in the language, it can be either a binding or a term
     for evaluation *)
 type command =
@@ -49,7 +56,7 @@ type command =
 (* Contexts *)
 (** A context is a list of tuples string * binding type, where, if the binding
     is an abstract binding, it includes a term. *)
-type context
+type context = (string * binding) list
 
 (** Provides an empty context *)
 val emptycontext : context
@@ -85,7 +92,3 @@ val prbinding : context -> binding -> unit
 (* Misc *)
 (** Extracts term filename, line number and column information *)
 val tmInfo: term -> info
-
-(* Debugging *)
-val check_trace: context -> bool
-val debugging: context -> dbg -> context

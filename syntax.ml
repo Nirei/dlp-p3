@@ -22,6 +22,7 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmLet of info * string * term * term
+  | TmRec of info * string * term
 
 (** Term to string *)
 let termTypeToString = function
@@ -41,6 +42,7 @@ let termTypeToString = function
   | TmPred (_,_) -> "TmPred"
   | TmIsZero (_,_) -> "TmIsZero"
   | TmLet (_,_,_,_) -> "TmLet"
+  | TmRec (_,_,_) -> "TmRec"
 
 type binding =
     NameBind
@@ -126,6 +128,7 @@ let tmmap onvar c t =
     | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
     | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
     | TmLet(fi,x,t1,t2) -> TmLet(fi,x,walk c t1,walk (c+1) t2)
+    | TmRec(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
   in walk c t
 
 let termShiftAbove d c t =
@@ -184,6 +187,7 @@ let tmInfo t = match t with
   | TmPred(fi,_) -> fi
   | TmIsZero(fi,_) -> fi
   | TmLet(fi,_,_,_) -> fi
+  | TmRec(fi,_,_) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
@@ -226,6 +230,12 @@ let rec printtm_Term outer ctx t = match t with
   | TmAbs(fi,x,t2) ->
     (let (ctx',x') = (pickfreshname ctx x) in
      obox(); pr "λ"; pr x'; pr ".";
+     if (small t2) && not outer then break() else print_space();
+     printtm_Term outer ctx' t2;
+     cbox())
+  | TmRec(fi,x,t2) -> (* printing function for recursive definitions *)
+    (let (ctx',x') = (pickfreshname ctx x) in
+     obox(); pr "Y λ"; pr x'; pr "."; (* we apply the lambda to the Y comb. *)
      if (small t2) && not outer then break() else print_space();
      printtm_Term outer ctx' t2;
      cbox())
@@ -298,36 +308,3 @@ let printtm ctx t = printtm_Term true ctx t
 let prbinding ctx b = match b with
     NameBind -> ()
   | TmAbbBind(t) -> pr "= "; printtm ctx t
-
-
-(* ---------------------------------------------------------------------- *)
-(* Debugging *)
-
-let print_context ctx =
-  let _ = List.fold_left
-    ( fun seen (name, binding) ->
-      if List.mem name seen
-      then seen
-      else (
-        print_string name;
-        pr " ";
-        prbinding ctx binding;
-        print_newline ();
-        name::seen
-      )
-    ) [] ctx in
-  ()
-
-let check_trace ctx =
-  let index = name2index dummyinfo ctx __TRACE__ in
-  match List.nth ctx index with
-      _, NameBind -> false
-    | _, TmAbbBind(traceVal) -> (match traceVal with
-        TmTrue(_) -> true
-      | TmFalse(_) -> false
-      | _ -> false)
-
-let debugging ctx dbg = match dbg with
-    DbgContextualize -> print_context ctx; ctx
-  | DbgStartTrace -> addbinding ctx __TRACE__ __TRACE_ON__
-  | DbgEndTrace -> addbinding ctx __TRACE__ __TRACE_OFF__

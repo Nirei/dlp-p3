@@ -3,6 +3,17 @@ open Syntax
 open Support.Error
 open Support.Pervasive
 
+(** Debugging **)
+
+let check_trace ctx =
+  let index = name2index dummyinfo ctx __TRACE__ in
+  match List.nth ctx index with
+      _, NameBind -> false
+    | _, TmAbbBind(traceVal) -> (match traceVal with
+        TmTrue(_) -> true
+      | TmFalse(_) -> false
+      | _ -> false)
+
 (* ------------------------   EVALUATION  ------------------------ *)
 
 exception NoRuleApplies
@@ -31,6 +42,7 @@ let rec eval1 ctx t depth =
   if check_trace ctx
   then (
     indent depth;
+    print_string "...";
     print_string (termTypeToString t);
     print_string " ( ";
     printtm ctx t;
@@ -115,3 +127,24 @@ let rec eval ctx t =
 let evalbinding ctx b = match b with
     TmAbbBind(t) -> let t' = eval ctx t in TmAbbBind(t')
   | bind -> bind
+
+(* ---------------------------------------------------------------------- *)
+(* Debugging *)
+
+let print_context ctx =
+  let _ = List.fold_left
+    ( fun seen (name, _) ->
+      if List.mem name seen
+      then seen
+      else (
+        let t = eval ctx (TmVar (dummyinfo, name2index dummyinfo ctx name, ctxlength ctx)) in
+        pr name; pr " = "; printtm ctx t; print_newline ();
+        name::seen
+      )
+    ) [] ctx in
+  ()
+
+let debugging ctx dbg = match dbg with
+    DbgContextualize -> print_context ctx; ctx
+  | DbgStartTrace -> addbinding ctx __TRACE__ __TRACE_ON__
+  | DbgEndTrace -> addbinding ctx __TRACE__ __TRACE_OFF__
