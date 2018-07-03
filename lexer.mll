@@ -26,6 +26,7 @@ let reservedWords = [
   ("ctx", fun i -> Parser.CTX i);
   ("start_trace", fun i -> Parser.START_TRACE i);
   ("stop_trace", fun i -> Parser.STOP_TRACE i);
+  ("rec", fun i -> Parser.REC i);
 
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);

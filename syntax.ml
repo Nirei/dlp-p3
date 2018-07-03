@@ -70,7 +70,46 @@ let __TRACE_ON__ = TmAbbBind(TmTrue(dummyinfo))
 let __TRACE_OFF__ = TmAbbBind(TmFalse(dummyinfo))
 let initialTraceFlag = __TRACE__, __TRACE_OFF__
 
-let emptycontext = [initialTraceFlag]
+(* let us express the fixed point combinator as an evaluation tree *)
+let __FPC__ = "__FPC__"
+let __FPC_TERM__ = TmAbbBind(
+  TmAbs(dummyinfo,"fun",
+  	TmApp(dummyinfo,
+  		TmAbs(dummyinfo,"fpc",
+  			TmApp(dummyinfo,
+  				TmVar(dummyinfo,1,3),
+  				TmAbs(dummyinfo,"y",
+  					TmApp(dummyinfo,
+  						TmApp(dummyinfo,
+  							TmVar(dummyinfo,1,4),
+  							TmVar(dummyinfo,1,4)
+  						),
+  						TmVar(dummyinfo,0,4)
+  					)
+  				)
+  			)
+  		),
+  		TmAbs(dummyinfo,"fpc",
+  			TmApp(dummyinfo,
+  				TmVar(dummyinfo,1,3),
+  				TmAbs(dummyinfo,"y",
+  					TmApp(dummyinfo,
+  						TmApp(dummyinfo,
+  							TmVar(dummyinfo,1,4),
+  							TmVar(dummyinfo,1,4)
+  						),
+  						TmVar(dummyinfo,0,4)
+  					)
+  				)
+  			)
+  		)
+  	)
+  )
+)
+(* and make it into a binding *)
+let strictFixedPointCombinator = __FPC__, __FPC_TERM__
+
+let emptycontext = [strictFixedPointCombinator; initialTraceFlag]
 
 let ctxlength ctx = List.length ctx
 
@@ -154,6 +193,13 @@ let termSubst j s t =
 
 let termSubstTop s t =
   termShift (-1) (termSubst 0 (termShift 1 s) t)
+
+(* ---------------------------------------------------------------------- *)
+
+let applyToFPC ctx t = match t with
+  | TmAbs(fi,_,_) ->
+    TmApp(fi, TmVar(fi, name2index fi ctx __FPC__, ctxlength ctx), t)
+  | _ -> raise (Invalid_argument "Should only apply abstract terms to FPC")
 
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)

@@ -30,6 +30,7 @@ let rec isval ctx t = match t with
   | TmString _  -> true
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_) -> true
+  | TmRec(_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
   | _ -> false
 
@@ -63,6 +64,8 @@ let rec eval1 ctx t depth =
      | _ -> raise NoRuleApplies)
   | TmApp(fi,TmAbs(_,x,t12),v2) when isval ctx v2 ->
     termSubstTop v2 t12
+  | TmApp(fi,TmRec(_,x,t12),v2) when isval ctx v2 ->
+    termSubstTop v2 (applyToFPC ctx t12)
   | TmApp(fi,v1,t2) when isval ctx v1 ->
     let t2' = eval1 ctx t2 (depth+1) in
     TmApp(fi, v1, t2')

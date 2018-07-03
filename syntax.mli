@@ -81,6 +81,9 @@ val isnamebound : context -> string -> bool
 val termShift: int -> term -> term
 val termSubstTop: term -> term -> term
 
+(* Recursion *)
+val applyToFPC: context -> term -> term
+
 (* Printing *)
 (** Prints a term *)
 val printtm: context -> term -> unit
