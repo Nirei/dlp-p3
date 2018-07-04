@@ -74,4 +74,10 @@ clean::
 depend:: $(DEPEND) 
 	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
-# 
+# Generate documentation
+doc: f
+	ocamldoc -html -d doc support.mli syntax.mli core.mli
+
+# Generate latex documentation
+latex: f
+	ocamldoc -latex support.mli syntax.mli core.mli
