@@ -78,10 +78,14 @@ val isnamebound : context -> string -> bool
 
 
 (* Shifting and substitution *)
+(** Displaces a variable term's indices by an specified amount *)
 val termShift: int -> term -> term
+(** Calculates variable indices inside a term by walking its structure
+  and shifting as required *)
 val termSubstTop: term -> term -> term
 
 (* Recursion *)
+(** Applies the given term to the FPC allowing for recursion *)
 val applyToFPC: context -> term -> term
 
 (* Printing *)

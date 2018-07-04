@@ -1,3 +1,5 @@
+(** Syntax trees and associated support functions *)
+
 open Format
 open Support.Error
 open Support.Pervasive
@@ -5,6 +7,10 @@ open Support.Pervasive
 (* ---------------------------------------------------------------------- *)
 (* Datatypes *)
 
+(* Data type definitions *)
+(** All the supported terms in the language, including an info component
+    describing its appearance on the source file if possible. Some terms are
+    compound, including other terms. *)
 type term =
     TmTrue of info
   | TmFalse of info
@@ -44,18 +50,25 @@ let termTypeToString = function
   | TmLet (_,_,_,_) -> "TmLet"
   | TmRec (_,_,_) -> "TmRec"
 
+(** A binding is either a name (let ... in ) or an abstraction (... = ...) over
+    a term *)
 type binding =
     NameBind
   | TmAbbBind of term
 
+(* Contexts *)
+(** A context is a list of tuples string * binding type, where, if the binding
+    is an abstract binding, it includes a term. *)
 type context = (string * binding) list
 
-(* Debug commands *)
+(** Debug commands *)
 type dbg =
   | DbgContextualize
   | DbgStartTrace
   | DbgEndTrace
 
+(** A command is an order in the language, it can be either a binding or a term
+    for evaluation *)
 type command =
   | Eval of info * term
   | Bind of info * string * binding
@@ -109,14 +122,16 @@ let __FPC_TERM__ = TmAbbBind(
 (* and make it into a binding *)
 let strictFixedPointCombinator = __FPC__, __FPC_TERM__
 
+(** Provides an empty context *)
 let emptycontext = [strictFixedPointCombinator; initialTraceFlag]
-
+(** Returns the length of the specified context *)
 let ctxlength ctx = List.length ctx
-
+(** Adds a binding to the given context *)
 let addbinding ctx x bind = (x,bind)::ctx
-
+(** Adds a name in the current context *)
 let addname ctx x = addbinding ctx x NameBind
 
+(** Checks if a name is bound in the given context *)
 let rec isnamebound ctx x =
   match ctx with
     [] -> false
@@ -124,10 +139,14 @@ let rec isnamebound ctx x =
     if y=x then true
     else isnamebound rest x
 
+(** Generates a new name for an inner variable in a lambda expression if
+  necessary to avoid name conflicts *)
 let rec pickfreshname ctx x =
   if isnamebound ctx x then pickfreshname ctx (x^"'")
   else ((x,NameBind)::ctx), x
 
+(** Given an index and a context, returns the variable name if it exists or
+    raises an error otherwise *)
 let index2name fi ctx x =
   try
     let (xn,_) = List.nth ctx x in
@@ -136,7 +155,7 @@ let index2name fi ctx x =
     let msg =
       Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
     error fi (msg x (List.length ctx))
-
+(** Given a name and a context, returns its index on that context *)
 let rec name2index fi ctx x =
   match ctx with
     [] -> error fi ("Identifier " ^ x ^ " is unbound")
@@ -175,8 +194,10 @@ let termShiftAbove d c t =
     (fun fi c x n -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d))
     c t
 
+(** Displaces a variable term's indices by an specified amount *)
 let termShift d t = termShiftAbove d 0 t
 
+(** Term shifting for bindings *)
 let bindingshift d bind =
   match bind with
     NameBind -> NameBind
@@ -191,11 +212,15 @@ let termSubst j s t =
     0
     t
 
+(** Calculates variable indices inside a term by walking its structure
+  and shifting as required *)
 let termSubstTop s t =
   termShift (-1) (termSubst 0 (termShift 1 s) t)
 
 (* ---------------------------------------------------------------------- *)
+(* Recursion *)
 
+(** Applies the given term to the FPC allowing for recursion *)
 let applyToFPC ctx t = match t with
   | TmAbs(fi,_,_) ->
     TmApp(fi, TmVar(fi, name2index fi ctx __FPC__, ctxlength ctx), t)
@@ -204,6 +229,7 @@ let applyToFPC ctx t = match t with
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 
+(** Given an index and a context, returns the binding associated to that index *)
 let getbinding fi ctx i =
   try
     let (_,bind) = List.nth ctx i in
@@ -216,6 +242,7 @@ let getbinding fi ctx i =
 (* ---------------------------------------------------------------------- *)
 (* Extracting file info *)
 
+(** Extracts term filename, line number and column information *)
 let tmInfo t = match t with
     TmTrue(fi) -> fi
   | TmFalse(fi) -> fi
@@ -315,6 +342,7 @@ and printtm_PathTerm outer ctx t = match t with
     printtm_ATerm false ctx t1; pr "."; pr l
   | t -> printtm_ATerm outer ctx t
 
+(** Prints an atomic term (true, 9, zero...) *)
 and printtm_ATerm outer ctx t = match t with
     TmTrue(_) -> pr "true"
   | TmFalse(_) -> pr "false"
@@ -349,8 +377,10 @@ and printtm_ATerm outer ctx t = match t with
     in f 1 t1
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
+(** Prints a term *)
 let printtm ctx t = printtm_Term true ctx t
 
+(** Prints a binding's name and associated terms *)
 let prbinding ctx b = match b with
     NameBind -> ()
   | TmAbbBind(t) -> pr "= "; printtm ctx t
