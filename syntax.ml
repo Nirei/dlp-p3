@@ -188,7 +188,7 @@ let tmmap onvar c t =
     | TmPred(fi,t1)   -> TmPred(fi, walk c t1)
     | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
     | TmLet(fi,x,t1,t2) -> TmLet(fi,x,walk c t1,walk (c+1) t2)
-    | TmRec(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
+    | TmRec(fi,x,t2) -> TmRec(fi,x,walk (c+1) t2)
   in walk c t
 
 let termShiftAbove d c t =
@@ -214,8 +214,8 @@ let termSubst j s t =
     0
     t
 
-(** Calculates variable indices inside a term by walking its structure
-  and shifting as required *)
+(** Substitutes every apparition of a variable inside term t with the value
+  passed as s *)
 let termSubstTop s t =
   termShift (-1) (termSubst 0 (termShift 1 s) t)
 
