@@ -84,8 +84,8 @@ val isnamebound : context -> string -> bool
 (* Shifting and substitution *)
 (** Displaces a variable term's indices by an specified amount *)
 val termShift: int -> term -> term
-(** Calculates variable indices inside a term by walking its structure
-  and shifting as required *)
+(** Substitutes every apparition of a variable inside the second term with the value
+  passed as the first term *)
 val termSubstTop: term -> term -> term
 
 (* Recursion *)
