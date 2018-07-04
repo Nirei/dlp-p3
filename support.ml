@@ -51,7 +51,7 @@ module Error = struct
     action to be performed is just to print a given string. *)
   let err s = errf (fun()-> print_string "Error: "; print_string s)
   (** First step of the error chain. Adds the error string to the printing function*)
-  let error fi s = errfAt fi (fun()-> print_string s; (* print_newline() *))
+  let error fi s = errfAt fi (fun()-> print_string s;)
   (** Variants that print a message but do not fail afterwards *)
   let warning s =
     print_string "Warning: "; print_string s;
