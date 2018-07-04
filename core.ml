@@ -5,6 +5,7 @@ open Support.Pervasive
 
 (** Debugging **)
 
+(** This function enable o disable trace printing*)
 let check_trace ctx =
   let index = name2index dummyinfo ctx __TRACE__ in
   match List.nth ctx index with
@@ -39,6 +40,7 @@ let rec indent = function
     0 -> ()
   | n -> print_string("  "); indent (n-1)
 
+(** Auxiliary function for eval*)
 let rec eval1 ctx t depth =
   if check_trace ctx
   then (
@@ -138,6 +140,7 @@ let evalbinding ctx b = match b with
 (* ---------------------------------------------------------------------- *)
 
 (* Debugging *)
+(**Output for the current context*)
 let print_context ctx =
   let _ = List.fold_left
     ( fun seen (name, _) ->
@@ -150,7 +153,8 @@ let print_context ctx =
       )
     ) [] ctx in
   ()
-
+(** Evaluation function for debugging commands. Evaluates a debugging command and modifies the given
+context to include it.*)
 let debugging ctx dbg = match dbg with
     DbgContextualize -> print_context ctx; ctx
   | DbgStartTrace -> addbinding ctx __TRACE__ __TRACE_ON__
