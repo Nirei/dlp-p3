@@ -12,6 +12,10 @@ context to include it. *)
 val evalbinding : context -> binding -> binding
 
 (* Debugging *)
+(**Output for the current context*)
 val print_context: context -> unit
+(** This function enable o disable trace printing*)
 val check_trace: context -> bool
+(** Evaluation function for debugging commands. Evaluates a debugging command and modifies the given
+context to include it.*)
 val debugging: context -> dbg -> context
