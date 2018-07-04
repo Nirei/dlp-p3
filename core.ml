@@ -122,18 +122,22 @@ let rec eval1 ctx t depth =
   | _ ->
     raise NoRuleApplies
 
+(** Evaluation function: Provided with a context and a term, it evaluates that
+term or returns it unchanged if there's no evaluation rule*)
 let rec eval ctx t =
   try let t' = eval1 ctx t 0
     in eval ctx t'
   with NoRuleApplies -> t
 
+(** Evaluation function for bindings. Evaluates a binding and modifies the given
+context to include it. *)
 let evalbinding ctx b = match b with
     TmAbbBind(t) -> let t' = eval ctx t in TmAbbBind(t')
   | bind -> bind
 
 (* ---------------------------------------------------------------------- *)
-(* Debugging *)
 
+(* Debugging *)
 let print_context ctx =
   let _ = List.fold_left
     ( fun seen (name, _) ->
