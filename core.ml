@@ -66,8 +66,8 @@ let rec eval1 ctx t depth =
      | _ -> raise NoRuleApplies)
   | TmApp(fi,TmAbs(_,x,t12),v2) when isval ctx v2 ->
     termSubstTop v2 t12
-  | TmApp(fi,TmRec(_,x,t12),v2) when isval ctx v2 ->
-    termSubstTop v2 (applyToFPC ctx t12)
+  | TmApp(fi,TmRec(ri,rx,rt),v2) when isval ctx v2 ->
+    TmApp(fi, applyToFPC ctx (TmRec(ri,rx,rt)), v2)
   | TmApp(fi,v1,t2) when isval ctx v1 ->
     let t2' = eval1 ctx t2 (depth+1) in
     TmApp(fi, v1, t2')

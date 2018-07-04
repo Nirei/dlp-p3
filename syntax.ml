@@ -224,9 +224,9 @@ let termSubstTop s t =
 
 (** Applies the given term to the FPC allowing for recursion *)
 let applyToFPC ctx t = match t with
-  | TmAbs(fi,_,_) ->
-    TmApp(fi, TmVar(fi, name2index fi ctx __FPC__, ctxlength ctx), t)
-  | _ -> raise (Invalid_argument "Should only apply abstract terms to FPC")
+  | TmRec(fi,x,v) ->
+    TmApp(fi, TmVar(fi, name2index fi ctx __FPC__, ctxlength ctx), TmAbs(fi,x,v))
+  | _ -> raise (Invalid_argument "Should only apply recusive terms to FPC")
 
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
