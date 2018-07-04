@@ -1,27 +1,23 @@
-(* module Support
-
-   Collects a number of low-level facilities used by the other modules
-   in the typechecker/evaluator. 
+(** Collects a number of low-level facilities used by the other modules
+   in the typechecker/evaluator.
 *)
 
 (* ------------------------------------------------------------------------ *)
-(* Some pervasive abbreviations -- opened everywhere by convention *)
-
+(** Some pervasive abbreviations -- opened everywhere by convention *)
 module Pervasive : sig
   val pr : string -> unit
-end  
+end
 
 (* ------------------------------------------------------------------------ *)
-(* Error printing utilities -- opened everywhere by convention *)
-
+(** Error printing utilities -- opened everywhere by convention *)
 module Error : sig
   (** An exception raised by the low-level error printer; exported
      here so that it can be caught in module Main and converted into
      an exit status for the whole program. *)
   exception Exit of int
 
-  (** An element of the type info represents a "file position": a 
-     file name, line number, and character position within the line.  
+  (** An element of the type info represents a "file position": a
+     file name, line number, and character position within the line.
      Used for printing error messages. *)
   type info
    (** An element of the type info represents a UNKNOWN file position *)
@@ -38,10 +34,10 @@ module Error : sig
   (** Print an error message and fail.  The printing function is called
      in a context where the formatter is processing an hvbox.  Insert
      calls to Format.print_space to print a space or, if necessary,
-     break the line at that point. 
+     break the line at that point.
      @param f printing function.*)
   val errf : (unit->unit) -> 'a
-  (**Adds fileinfo to the printing function*)
+  (** Adds fileinfo to the printing function*)
   val errfAt : info -> (unit->unit) -> 'a
 
   (** Convenient wrappers for the above, for the common case where the
@@ -55,5 +51,3 @@ module Error : sig
   (** Variants that print a message but do not fail afterwards with fileinfo*)
   val warningAt : info -> string -> unit
 end
-
-

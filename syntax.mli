@@ -26,6 +26,7 @@ type term =
   | TmLet of info * string * term * term
   | TmRec of info * string * term (* Term to allow for recursion *)
 
+(** Auxiliary function to recover the name of the term of a given type *)
 val termTypeToString : term -> string
 
 (** A binding is either a name (let ... in ) or an abstraction (... = ...) over
@@ -35,19 +36,23 @@ type binding =
   | TmAbbBind of term
 
 (* Debug commands *)
+(** Available types for the debug commands *)
 type dbg =
   | DbgContextualize
   | DbgStartTrace
   | DbgEndTrace
 
-(* Trace flag *)
+(** Trace flag *)
 val __TRACE__ : string
+(** Binding to activate the tracing facility *)
 val __TRACE_ON__ : binding
+(** Binding to deactivate the tracing facility *)
 val __TRACE_OFF__ : binding
+(** Initial status of the trace flag (off) *)
 val initialTraceFlag : string * binding
 
-(** A command is an order in the language, it can be either a binding or a term
-    for evaluation *)
+(** A command is an order in the language, it can be either a binding, a term
+    for evaluation or a debugging command *)
 type command =
   | Eval of info * term
   | Bind of info * string * binding
@@ -75,7 +80,6 @@ val getbinding : info -> context -> int -> binding
 val name2index : info -> context -> string -> int
 (** Checks if a name is bound in the given context *)
 val isnamebound : context -> string -> bool
-
 
 (* Shifting and substitution *)
 (** Displaces a variable term's indices by an specified amount *)

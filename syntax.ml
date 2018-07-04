@@ -30,7 +30,7 @@ type term =
   | TmLet of info * string * term * term
   | TmRec of info * string * term
 
-(** Term to string *)
+(** Auxiliary function to recover the name of the term of a given type *)
 let termTypeToString = function
     TmTrue (_) -> "TmTrue"
   | TmFalse (_) -> "TmFalse"
@@ -79,7 +79,9 @@ type command =
 
 (* Name of the trace flag *)
 let __TRACE__ = "__TRACE__"
+(** Binding to activate the tracing facility *)
 let __TRACE_ON__ = TmAbbBind(TmTrue(dummyinfo))
+(** Binding to deactivate the tracing facility *)
 let __TRACE_OFF__ = TmAbbBind(TmFalse(dummyinfo))
 let initialTraceFlag = __TRACE__, __TRACE_OFF__
 
